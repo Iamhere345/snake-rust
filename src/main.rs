@@ -1,5 +1,8 @@
+use std::{thread, time};
+
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color};
+use ggez::timer;
 use ggez::input::keyboard::{self, KeyCode};
 use ggez::mint::Point2;
 use ggez::timer::check_update_time;
@@ -26,7 +29,7 @@ fn main() {
     event::run(ctx, event_loop, snake_game);
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct Pos {
     x: f32,
     y: f32,
@@ -70,7 +73,7 @@ impl Game {
             snake_pos: vec![
                 Pos {
                     x: 0.0,
-                    y: 15.0 * 32.0,
+                    y: 32.0,
                 },
                 Pos { x: 0.0, y: -32.0 },
             ],
@@ -82,7 +85,7 @@ impl Game {
 
 impl EventHandler for Game {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        const DESIRED_FPS: u32 = 5;
+        const DESIRED_FPS: u32 = 60;
 
         while check_update_time(ctx, DESIRED_FPS) {
             {
@@ -107,10 +110,10 @@ impl EventHandler for Game {
                     let mut snake_head = &mut self.snake_pos[0];
 
                     match self.snake_dir {
-                        Dir::Up => snake_head.y += 2.0,
-                        Dir::Down => snake_head.y -= 2.0,
-                        Dir::Right => snake_head.x += 2.0,
-                        Dir::Left => snake_head.x -= 2.0,
+                        Dir::Up => snake_head.y -= (64.0 * timer::duration_to_f64(timer::delta(ctx))) as f32,
+                        Dir::Down => snake_head.y += (64.0 * timer::duration_to_f64(timer::delta(ctx))) as f32,
+                        Dir::Right => snake_head.x += (64.0 * timer::duration_to_f64(timer::delta(ctx))) as f32,
+                        Dir::Left => snake_head.x -= (64.0 * timer::duration_to_f64(timer::delta(ctx))) as f32,
                     }
                 }
 
@@ -122,6 +125,7 @@ impl EventHandler for Game {
                 }
 
                 i += 1;
+
             }
 
             //collision logic
@@ -134,12 +138,21 @@ impl EventHandler for Game {
         graphics::clear(ctx, Color::WHITE);
 
         for seg_pos in &self.snake_pos {
-            println!("{:?}", seg_pos);
+
+            let colour: graphics::Color;
+
+            if *seg_pos == self.snake_pos[1] {
+                println!("{:?}", self.snake_pos[1]);
+                colour = graphics::Color::CYAN;
+            } else {
+                colour = graphics::Color::BLACK
+            }
+
             let seg = graphics::Mesh::new_rectangle(
                 ctx,
                 graphics::DrawMode::fill(),
                 graphics::Rect::new(seg_pos.x, seg_pos.y, 32.0, 32.0),
-                graphics::Color::BLACK,
+                colour
             )
             .expect("Unable to create mesh.");
 
